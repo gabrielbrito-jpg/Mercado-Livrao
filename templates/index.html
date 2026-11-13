@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>FeiraLivrão</title>
+</head>
+<body>
+
+    <header>
+        <h1>FeiraLivrão</h1>
+        <div>
+            <input type="text" id="busca" placeholder="Buscar produtos...">
+            <button onclick="buscarProdutos()">Buscar</button>
+        </div>
+        <div>Saldo: <strong id="saldo">R$ 0,00</strong></div>
+    </header>
+
+    <nav>
+        <button id="aba-loja" onclick="mostrarAba('loja')">Loja</button>
+        <button id="aba-compras" onclick="mostrarAba('compras')">Minhas compras</button>
+        <button id="aba-vender" onclick="mostrarAba('vender')">Vender</button>
+        <button id="aba-relatorios" onclick="mostrarAba('relatorios')">Relatórios</button>
+    </nav>
+
+    <div id="mensagem"></div>
+
+    <main>
+
+        <!-- LOJA -->
+        <section id="loja">
+            <div>
+                <select id="filtro-categoria" onchange="buscarProdutos()">
+                    <option value="">Todas as categorias</option>
+                </select>
+                <input type="number" id="preco-min" placeholder="Preço mín." min="0">
+                <input type="number" id="preco-max" placeholder="Preço máx." min="0">
+                <select id="ordem" onchange="buscarProdutos()">
+                    <option value="">Ordenar por</option>
+                    <option value="preco_asc">Menor preço</option>
+                    <option value="preco_desc">Maior preço</option>
+                    <option value="melhor_avaliado">Melhor avaliados</option>
+                    <option value="mais_vendido">Mais vendidos</option>
+                </select>
+                <button onclick="buscarProdutos()">Filtrar</button>
+                <button onclick="limparFiltros()">Limpar</button>
+            </div>
+            <div id="produtos"></div>
+        </section>
+
+        <!-- MINHAS COMPRAS -->
+        <section id="compras" hidden>
+            <h2>Minhas compras</h2>
+            <table border="1" cellpadding="6">
+                <thead>
+                    <tr><th></th><th>Produto</th><th>Qtd</th><th>Total</th><th>Data</th></tr>
+                </thead>
+                <tbody id="lista-compras"></tbody>
+            </table>
+        </section>
+
+        <!-- VENDER -->
+        <section id="vender" hidden>
+            <h2>Cadastrar produto</h2>
+            <div>
+                <input type="text" id="novo-titulo" placeholder="Título do produto">
+                <textarea id="novo-descricao" placeholder="Descrição"></textarea>
+                <input type="number" id="novo-preco" placeholder="Preço" step="0.01" min="0">
+                <input type="number" id="novo-estoque" placeholder="Estoque" min="0" value="1">
+                <input type="text" id="novo-emoji" placeholder="Emoji (ex: 🪁)" maxlength="4">
+                <select id="novo-categoria"></select>
+                <select id="novo-vendedor"></select>
+                <button onclick="cadastrarProduto()">Cadastrar produto</button>
+            </div>
+
+            <h2>Cadastrar vendedor</h2>
+            <div>
+                <input type="text" id="vend-nome" placeholder="Nome do vendedor">
+                <input type="text" id="vend-cidade" placeholder="Cidade">
+                <button onclick="cadastrarVendedor()">Cadastrar vendedor</button>
+            </div>
+
+            <h2>Cadastrar categoria</h2>
+            <div>
+                <input type="text" id="cat-nome" placeholder="Nome da categoria">
+                <button onclick="cadastrarCategoria()">Cadastrar categoria</button>
+            </div>
+        </section>
+
+        <!-- RELATORIOS -->
+        <section id="relatorios" hidden>
+            <h2>Produtos com nota média <small>(LEFT JOIN)</small></h2>
+            <table border="1" cellpadding="6"><thead><tr><th>Produto</th><th>Nota média</th><th>Avaliações</th></tr></thead>
+                <tbody id="rel-notas"></tbody></table>
+
+            <h2>Categorias e quantidade de produtos <small>(RIGHT JOIN)</small></h2>
+            <table border="1" cellpadding="6"><thead><tr><th>Categoria</th><th>Produtos</th></tr></thead>
+                <tbody id="rel-categorias"></tbody></table>
+
+            <h2>Vendedores e produtos <small>(FULL JOIN)</small></h2>
+            <table border="1" cellpadding="6"><thead><tr><th>Vendedor</th><th>Produto</th></tr></thead>
+                <tbody id="rel-vendedores"></tbody></table>
+
+            <h2>Mais vendidos <small>(INNER JOIN)</small></h2>
+            <table border="1" cellpadding="6"><thead><tr><th>Produto</th><th>Unidades vendidas</th></tr></thead>
+                <tbody id="rel-vendidos"></tbody></table>
+        </section>
+
+    </main>
+
+    <!-- DETALHE DO PRODUTO -->
+    <dialog id="modal">
+        <button onclick="fecharModalBotao()">Fechar</button>
+        <div id="detalhe"></div>
+    </dialog>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
