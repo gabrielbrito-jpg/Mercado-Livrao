@@ -1,4 +1,4 @@
-from database import Database
+from daos.database import Database
 
 # recria o banco do zero antes de testar
 Database().criar_banco()

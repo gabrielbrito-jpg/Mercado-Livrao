@@ -1,10 +1,21 @@
 import os
 from flask import Flask, jsonify, request, render_template, send_from_directory
 
-from database import Database, ARQUIVO_BANCO
-from classes import Vendedor, Categoria, Produto, Compra, Avaliacao
-from daos import (CompradorDAO, VendedorDAO, CategoriaDAO, ProdutoDAO,
-                  CompraDAO, AvaliacaoDAO, RelatorioDAO)
+from daos.database import Database, ARQUIVO_BANCO
+
+from models.vendedor import Vendedor
+from models.categoria import Categoria
+from models.produto import Produto
+from models.compra import Compra
+from models.avaliacao import Avaliacao
+
+from daos.comprador_dao import CompradorDAO
+from daos.vendedor_dao import VendedorDAO
+from daos.categoria_dao import CategoriaDAO
+from daos.produto_dao import ProdutoDAO
+from daos.compra_dao import CompraDAO
+from daos.avaliacao_dao import AvaliacaoDAO
+from daos.relatorio_dao import RelatorioDAO
 
 app = Flask(__name__)
 

@@ -6,7 +6,7 @@ Marketplace estilo "feira online": o comprador começa com R$ 1000 de crédito, 
 
 ```bash
 pip install flask
-python database.py   # (opcional) recria o banco do zero com os dados de exemplo
+python criar_banco.py   # (opcional) recria o banco do zero com os dados de exemplo
 python app.py
 ```
 
@@ -19,10 +19,17 @@ Para testar todas as rotas sem o navegador: `python testar_api.py` (recria o ban
 ## Estrutura
 
 ```
-app.py              rotas Flask (API JSON + página inicial)
-classes.py          classes do modelo (Comprador, Produto, Compra...)
-daos.py             DAOs com o SQL de cada tabela + relatórios com JOIN
-database.py         conexão e criação do banco
+app.py              rotas Flask (páginas + API JSON)
+criar_banco.py      recria o banco com os dados de exemplo
+testar_api.py       testa todas as rotas da API
+models/             classes do modelo, uma por arquivo
+    comprador.py, vendedor.py, categoria.py, produto.py, compra.py, avaliacao.py
+daos/               acesso ao banco
+    database.py     conexão e criação do banco
+    comum.py        funções executar_select e executar_comando
+    comprador_dao.py, vendedor_dao.py, categoria_dao.py, produto_dao.py,
+    compra_dao.py, avaliacao_dao.py
+    relatorio_dao.py  relatórios com INNER, LEFT, RIGHT e FULL JOIN
 index.html          página da loja (fica na raiz do projeto)
 templates/          outras páginas: compras.html, vender.html, relatorios.html
 static/css/style.css  estilo
