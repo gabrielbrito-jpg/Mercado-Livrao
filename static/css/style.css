@@ -108,6 +108,8 @@ textarea {
 }
 
 .logo {
+    text-decoration: none;
+    color: var(--texto);
     display: flex;
     align-items: center;
     gap: 10px;
@@ -171,7 +173,9 @@ textarea {
     border-bottom: 1px solid var(--borda);
 }
 
-.abas button {
+.abas a {
+    text-decoration: none;
+    font-size: 16px;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -182,11 +186,11 @@ textarea {
     border-bottom: 2px solid transparent;
 }
 
-.abas button:hover {
+.abas a:hover {
     background: var(--fundo-cinza);
 }
 
-.abas button.ativa {
+.abas a.ativa {
     color: var(--azul);
     border-bottom-color: var(--azul);
 }
@@ -511,7 +515,7 @@ dialog .fechar {
         border-top: 1px solid var(--borda);
         border-bottom: none;
     }
-    .abas button {
+    .abas a {
         flex: 1;
         flex-direction: column;
         gap: 4px;

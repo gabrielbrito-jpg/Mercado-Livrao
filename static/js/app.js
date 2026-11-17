@@ -31,22 +31,15 @@ async function chamar(url, metodo, dados) {
     return { ok: resposta.ok, dados: json };
 }
 
-// ---------- abas ----------
+// ---------- busca do topo ----------
 
-function mostrarAba(nome) {
-    var abas = ["loja", "compras", "vender", "relatorios"];
-    for (var i = 0; i < abas.length; i++) {
-        document.getElementById(abas[i]).hidden = true;
-        document.getElementById("aba-" + abas[i]).classList.remove("ativa");
-    }
-    document.getElementById(nome).hidden = false;
-    document.getElementById("aba-" + nome).classList.add("ativa");
-
-    if (nome == "compras") {
-        carregarCompras();
-    }
-    if (nome == "relatorios") {
-        carregarRelatorios();
+// na loja pesquisa direto; nas outras paginas vai para a loja com a busca
+function pesquisar() {
+    var termo = document.getElementById("busca").value;
+    if (document.getElementById("produtos")) {
+        buscarProdutos();
+    } else {
+        window.location.href = "/?busca=" + encodeURIComponent(termo);
     }
 }
 
@@ -61,16 +54,19 @@ async function carregarSaldo() {
 
 async function carregarCategorias() {
     var r = await chamar("/categorias");
-    var filtro = document.getElementById("filtro-categoria");
-    var form = document.getElementById("novo-categoria");
-
-    filtro.innerHTML = '<option value="">Todas as categorias</option>';
-    form.innerHTML = '<option value="">Sem categoria</option>';
+    var filtro = document.getElementById("filtro-categoria");  // existe na loja
+    var form = document.getElementById("novo-categoria");      // existe em vender
+    var opcoes = "";
 
     for (var i = 0; i < r.dados.length; i++) {
         var c = r.dados[i];
-        filtro.innerHTML += '<option value="' + c.id + '">' + texto(c.nome) + "</option>";
-        form.innerHTML += '<option value="' + c.id + '">' + texto(c.nome) + "</option>";
+        opcoes += '<option value="' + c.id + '">' + texto(c.nome) + "</option>";
+    }
+    if (filtro) {
+        filtro.innerHTML = '<option value="">Todas as categorias</option>' + opcoes;
+    }
+    if (form) {
+        form.innerHTML = '<option value="">Sem categoria</option>' + opcoes;
     }
 }
 
@@ -273,11 +269,10 @@ async function cadastrarProduto() {
     var r = await chamar("/produtos", "POST", dados);
 
     if (r.ok) {
-        mostrarMensagem("Produto cadastrado!", "ok");
+        mostrarMensagem("Produto cadastrado! Ele já aparece na loja.", "ok");
         document.getElementById("novo-titulo").value = "";
         document.getElementById("novo-descricao").value = "";
         document.getElementById("novo-preco").value = "";
-        buscarProdutos();
     } else {
         mostrarMensagem(r.dados.erro, "erro");
     }
@@ -351,14 +346,38 @@ async function carregarRelatorios() {
 }
 
 // ---------- ao abrir a pagina ----------
+// cada pagina carrega so o que ela tem na tela
 
 document.getElementById("busca").addEventListener("keypress", function (e) {
     if (e.key == "Enter") {
-        buscarProdutos();
+        pesquisar();
     }
 });
 
 carregarSaldo();
-carregarCategorias();
-carregarVendedores();
-buscarProdutos();
+
+// loja (index.html)
+if (document.getElementById("produtos")) {
+    var parametros = new URLSearchParams(window.location.search);
+    if (parametros.get("busca")) {
+        document.getElementById("busca").value = parametros.get("busca");
+    }
+    carregarCategorias();
+    buscarProdutos();
+}
+
+// minhas compras (compras.html)
+if (document.getElementById("lista-compras")) {
+    carregarCompras();
+}
+
+// vender (vender.html)
+if (document.getElementById("novo-titulo")) {
+    carregarCategorias();
+    carregarVendedores();
+}
+
+// relatorios (relatorios.html)
+if (document.getElementById("rel-notas")) {
+    carregarRelatorios();
+}

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Vender · FeiraLivrão</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+    <header class="topo">
+        <a class="logo" href="/">
+            <span class="logo-icone">🧺</span>
+            <span>Feira<strong>Livrão</strong></span>
+        </a>
+        <div class="busca">
+            <input type="text" id="busca" placeholder="Buscar produtos, marcas e muito mais...">
+            <button onclick="pesquisar()">Buscar</button>
+        </div>
+        <div class="saldo">
+            <span>Seu saldo</span>
+            <strong id="saldo">R$ 0,00</strong>
+        </div>
+    </header>
+
+    <nav class="abas">
+        <a href="/"><svg viewBox="0 0 24 24"><path d="M4 9l1.5-5h13L20 9M4 9h16v11H4zM9 20v-6h6v6"/></svg><span>Loja</span></a>
+        <a href="/minhas-compras"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="1"/><path d="M8 3v4M16 3v4M4 10h16M10 15l2 2 4-4"/></svg><span>Minhas compras</span></a>
+        <a href="/vender" class="ativa"><svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="14" rx="1"/><path d="M6 3h12M12 10v6M9 13h6"/></svg><span>Vender</span></a>
+        <a href="/relatorios"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span>Relatórios</span></a>
+    </nav>
+
+    <div id="mensagem"></div>
+
+    <main>
+            <div class="painel">
+                <h2>Cadastrar produto</h2>
+                <div class="formulario">
+                    <input type="text" id="novo-titulo" placeholder="Título do produto">
+                    <textarea id="novo-descricao" placeholder="Descrição"></textarea>
+                    <div class="linha">
+                        <input type="number" id="novo-preco" placeholder="Preço" step="0.01" min="0">
+                        <input type="number" id="novo-estoque" placeholder="Estoque" min="0" value="1">
+                        <input type="text" id="novo-emoji" placeholder="Emoji (ex: 🪁)" maxlength="4">
+                    </div>
+                    <div class="linha">
+                        <select id="novo-categoria"></select>
+                        <select id="novo-vendedor"></select>
+                    </div>
+                    <button onclick="cadastrarProduto()">Cadastrar produto</button>
+                </div>
+            </div>
+
+            <div class="duas-colunas">
+                <div class="painel">
+                    <h2>Cadastrar vendedor</h2>
+                    <div class="formulario">
+                        <input type="text" id="vend-nome" placeholder="Nome do vendedor">
+                        <input type="text" id="vend-cidade" placeholder="Cidade">
+                        <button onclick="cadastrarVendedor()">Cadastrar vendedor</button>
+                    </div>
+                </div>
+
+                <div class="painel">
+                    <h2>Cadastrar categoria</h2>
+                    <div class="formulario">
+                        <input type="text" id="cat-nome" placeholder="Nome da categoria">
+                        <button onclick="cadastrarCategoria()">Cadastrar categoria</button>
+                    </div>
+                </div>
+            </div>
+    </main>
+
+    <footer class="rodape">FeiraLivrão · Projeto Flask + HTML/CSS/JS · Colégio UNASP-HT</footer>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

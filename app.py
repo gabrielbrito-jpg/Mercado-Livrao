@@ -1,5 +1,5 @@
 import os
-from flask import Flask, jsonify, request, render_template
+from flask import Flask, jsonify, request, render_template, send_from_directory
 
 from database import Database, ARQUIVO_BANCO
 from classes import Vendedor, Categoria, Produto, Compra, Avaliacao
@@ -23,9 +23,30 @@ relatorio_dao = RelatorioDAO()
 COMPRADOR_ID = 1  # sem login, so existe um comprador
 
 
+PASTA = os.path.dirname(os.path.abspath(__file__))
+
+
+# ---------- paginas ----------
+
+# o index.html fica na raiz do projeto
 @app.route("/")
 def inicio():
-    return render_template("index.html")
+    return send_from_directory(PASTA, "index.html")
+
+
+@app.route("/minhas-compras")
+def pagina_compras():
+    return render_template("compras.html")
+
+
+@app.route("/vender")
+def pagina_vender():
+    return render_template("vender.html")
+
+
+@app.route("/relatorios")
+def pagina_relatorios():
+    return render_template("relatorios.html")
 
 
 # ---------- comprador ----------

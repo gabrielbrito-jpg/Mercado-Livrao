@@ -23,14 +23,24 @@ app.py              rotas Flask (API JSON + página inicial)
 classes.py          classes do modelo (Comprador, Produto, Compra...)
 daos.py             DAOs com o SQL de cada tabela + relatórios com JOIN
 database.py         conexão e criação do banco
-templates/index.html  página única do site
+index.html          página da loja (fica na raiz do projeto)
+templates/          outras páginas: compras.html, vender.html, relatorios.html
 static/css/style.css  estilo
 static/js/app.js      chamadas fetch para as rotas e montagem da tela
 schemas/            schema.sql, seed.sql, consultas.sql e o banco
 docs/               MER, modelo lógico e diagrama de classes
 ```
 
-## Rotas
+## Páginas
+
+| Rota | Arquivo |
+|---|---|
+| `/` | `index.html` (loja) |
+| `/minhas-compras` | `templates/compras.html` |
+| `/vender` | `templates/vender.html` |
+| `/relatorios` | `templates/relatorios.html` |
+
+## Rotas da API (usadas pelo fetch)
 
 | Método | Rota | O que faz |
 |---|---|---|
