@@ -4,7 +4,7 @@ import os
 # pasta "schemas" fica na raiz do projeto (uma pasta acima do backend)
 PASTA_SCHEMAS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "schemas")
 
-ARQUIVO_BANCO = os.path.join(PASTA_SCHEMAS, "feiralivrao.db")
+ARQUIVO_BANCO = os.path.join(PASTA_SCHEMAS, "mercadolivrao.db")
 ARQUIVO_SCHEMA = os.path.join(PASTA_SCHEMAS, "schema.sql")
 ARQUIVO_SEED = os.path.join(PASTA_SCHEMAS, "seed.sql")
 

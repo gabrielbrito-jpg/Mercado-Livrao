@@ -1,4 +1,4 @@
-# Diagrama de Classes (UML) - FeiraLivrão
+# Diagrama de Classes (UML) - Mercado Livrão
 
 Cole o código abaixo em https://mermaid.live para ver e exportar como imagem.
 
