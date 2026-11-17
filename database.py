@@ -1,7 +1,11 @@
 import sqlite3
 import os
 
-ARQUIVO_BANCO = "feiralivrao.db"
+# caminhos a partir da pasta do projeto (funciona de qualquer lugar)
+PASTA = os.path.dirname(os.path.abspath(__file__))
+ARQUIVO_BANCO = os.path.join(PASTA, "schemas", "feiralivrao.db")
+ARQUIVO_SCHEMA = os.path.join(PASTA, "schemas", "schema.sql")
+ARQUIVO_SEED = os.path.join(PASTA, "schemas", "seed.sql")
 
 
 class Database:
@@ -24,8 +28,8 @@ class Database:
     def criar_banco(self):
         if os.path.exists(ARQUIVO_BANCO):
             os.remove(ARQUIVO_BANCO)
-        self.executar_arquivo("schema.sql")
-        self.executar_arquivo("seed.sql")
+        self.executar_arquivo(ARQUIVO_SCHEMA)
+        self.executar_arquivo(ARQUIVO_SEED)
 
 
 if __name__ == "__main__":

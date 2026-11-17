@@ -37,8 +37,10 @@ function mostrarAba(nome) {
     var abas = ["loja", "compras", "vender", "relatorios"];
     for (var i = 0; i < abas.length; i++) {
         document.getElementById(abas[i]).hidden = true;
+        document.getElementById("aba-" + abas[i]).classList.remove("ativa");
     }
     document.getElementById(nome).hidden = false;
+    document.getElementById("aba-" + nome).classList.add("ativa");
 
     if (nome == "compras") {
         carregarCompras();
@@ -89,7 +91,12 @@ function estrelas(nota) {
     if (nota === null) {
         return "Sem avaliações";
     }
-    return "Nota " + Number(nota).toFixed(1) + " de 5";
+    var cheias = Math.round(nota);
+    var texto = "";
+    for (var i = 1; i <= 5; i++) {
+        texto += i <= cheias ? "★" : "☆";
+    }
+    return texto + " " + Number(nota).toFixed(1);
 }
 
 async function buscarProdutos() {
@@ -124,8 +131,9 @@ async function buscarProdutos() {
             '<div class="' + estoqueClasse + '">' + estoqueTexto + "</div>" +
             '<div class="acoes">' +
             '<input type="number" id="qtd-' + p.id + '" value="1" min="1">' +
-            '<button onclick="comprar(' + p.id + ')">Comprar</button>' +
-            "</div><hr></div>";
+            '<button onclick="comprar(' + p.id + ')"' + (p.estoque > 0 ? "" : " disabled") + ">" +
+            (p.estoque > 0 ? "Comprar" : "Esgotado") + "</button>" +
+            "</div></div>";
     }
 }
 
