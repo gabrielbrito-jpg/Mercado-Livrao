@@ -17,7 +17,8 @@ from daos.compra_dao import CompraDAO
 from daos.avaliacao_dao import AvaliacaoDAO
 from daos.relatorio_dao import RelatorioDAO
 
-app = Flask(__name__)
+# o front (index.html, templates e static) fica uma pasta acima, na raiz do projeto
+app = Flask(__name__, template_folder="../templates", static_folder="../static")
 
 # se o banco ainda nao existe, cria com os dados de exemplo
 if not os.path.exists(ARQUIVO_BANCO):
@@ -34,7 +35,8 @@ relatorio_dao = RelatorioDAO()
 COMPRADOR_ID = 1  # sem login, so existe um comprador
 
 
-PASTA = os.path.dirname(os.path.abspath(__file__))
+PASTA_BACKEND = os.path.dirname(os.path.abspath(__file__))
+PASTA = os.path.dirname(PASTA_BACKEND)  # raiz do projeto
 
 
 # ---------- paginas ----------

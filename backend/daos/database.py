@@ -2,7 +2,8 @@ import sqlite3
 import os
 
 # caminhos a partir da pasta do projeto (funciona de qualquer lugar)
-PASTA = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# este arquivo esta em backend/daos, entao sobe tres niveis ate a raiz
+PASTA = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 ARQUIVO_BANCO = os.path.join(PASTA, "schemas", "feiralivrao.db")
 ARQUIVO_SCHEMA = os.path.join(PASTA, "schemas", "schema.sql")
 ARQUIVO_SEED = os.path.join(PASTA, "schemas", "seed.sql")
