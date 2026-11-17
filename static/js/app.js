@@ -118,22 +118,25 @@ async function buscarProdutos() {
 
     for (var i = 0; i < r.dados.length; i++) {
         var p = r.dados[i];
-        var estoqueTexto = p.estoque > 0 ? p.estoque + " em estoque" : "Esgotado";
+        var estoqueTexto = p.estoque > 0 ? p.estoque + " un." : "Esgotado";
         var estoqueClasse = p.estoque > 0 ? "estoque" : "estoque acabou";
 
         area.innerHTML +=
             '<div class="card">' +
             '<div class="emoji" onclick="abrirDetalhe(' + p.id + ')">' + texto(p.emoji) + "</div>" +
+            '<div class="corpo">' +
             '<h3 onclick="abrirDetalhe(' + p.id + ')">' + texto(p.titulo) + "</h3>" +
-            '<div class="info">' + texto(p.categoria) + " | " + texto(p.vendedor) + "</div>" +
-            '<div class="nota">' + estrelas(p.nota_media) + "</div>" +
-            '<div class="preco">' + dinheiro(p.preco) + "</div>" +
-            '<div class="' + estoqueClasse + '">' + estoqueTexto + "</div>" +
+            '<div class="campo"><span class="rotulo">Preço</span><span class="valor preco">' + dinheiro(p.preco) + "</span></div>" +
+            '<div class="colunas">' +
+            '<div class="campo"><span class="rotulo">Estoque</span><span class="valor ' + estoqueClasse + '">' + estoqueTexto + "</span></div>" +
+            '<div class="campo"><span class="rotulo">Avaliação</span><span class="valor nota">' + estrelas(p.nota_media) + "</span></div>" +
+            "</div>" +
+            '<div class="campo"><span class="rotulo">Vendedor</span><span class="valor">' + (p.vendedor ? texto(p.vendedor) : "Sem vendedor") + "</span></div>" +
             '<div class="acoes">' +
             '<input type="number" id="qtd-' + p.id + '" value="1" min="1">' +
             '<button onclick="comprar(' + p.id + ')"' + (p.estoque > 0 ? "" : " disabled") + ">" +
             (p.estoque > 0 ? "Comprar" : "Esgotado") + "</button>" +
-            "</div></div>";
+            "</div></div></div>";
     }
 }
 
@@ -167,11 +170,20 @@ async function abrirDetalhe(id) {
 
     var html =
         '<div class="detalhe-emoji">' + texto(p.emoji) + "</div>" +
+        '<div class="detalhe-corpo">' +
         "<h2>" + texto(p.titulo) + "</h2>" +
-        "<p>" + texto(p.descricao) + "</p>" +
-        "<p>Categoria: " + texto(p.categoria) + "<br>Vendedor: " + texto(p.vendedor) + "</p>" +
-        "<p><strong>" + dinheiro(p.preco) + "</strong> | " + p.estoque + " em estoque</p>" +
-        "<p>" + estrelas(p.nota_media) + "</p>" +
+        '<div class="campo"><span class="rotulo">Preço</span><span class="valor preco">' + dinheiro(p.preco) + "</span></div>" +
+        '<div class="colunas">' +
+        '<div class="campo"><span class="rotulo">Estoque</span><span class="valor">' + p.estoque + " un.</span></div>" +
+        '<div class="campo"><span class="rotulo">Avaliação</span><span class="valor nota">' + estrelas(p.nota_media) + "</span></div>" +
+        "</div>" +
+        '<div class="colunas">' +
+        '<div class="campo"><span class="rotulo">Categoria</span><span class="valor">' + (p.categoria ? texto(p.categoria) : "Sem categoria") + "</span></div>" +
+        '<div class="campo"><span class="rotulo">Vendedor</span><span class="valor">' + (p.vendedor ? texto(p.vendedor) : "Sem vendedor") + "</span></div>" +
+        "</div>" +
+        '<div class="campo"><span class="rotulo">Descrição</span><span class="valor">' + texto(p.descricao) + "</span></div>" +
+        '<button class="botao-largo" onclick="comprarDoDetalhe(' + id + ')"' + (p.estoque > 0 ? "" : " disabled") + ">" +
+        (p.estoque > 0 ? "Comprar" : "Esgotado") + "</button>" +
         "<h3>Avaliações</h3>";
 
     if (p.avaliacoes.length == 0) {
@@ -179,8 +191,8 @@ async function abrirDetalhe(id) {
     }
     for (var i = 0; i < p.avaliacoes.length; i++) {
         var a = p.avaliacoes[i];
-        html += '<div class="avaliacao"><strong>' + texto(a.comprador) + "</strong> - nota " + a.nota +
-            "<br>" + texto(a.comentario) + "</div>";
+        html += '<div class="avaliacao"><span class="rotulo">' + texto(a.comprador) + " · " + estrelas(a.nota) +
+            '</span><span class="valor">' + texto(a.comentario) + "</span></div>";
     }
 
     html +=
@@ -192,10 +204,23 @@ async function abrirDetalhe(id) {
         '<option value="1">1 - Péssimo</option></select>' +
         '<textarea id="av-comentario" placeholder="Comentário"></textarea>' +
         '<button onclick="enviarAvaliacao(' + id + ')">Enviar avaliação</button>' +
-        "</div>";
+        "</div></div>";
 
     document.getElementById("detalhe").innerHTML = html;
     document.getElementById("modal").showModal();
+}
+
+async function comprarDoDetalhe(id) {
+    var r = await chamar("/comprar", "POST", { produto_id: id, quantidade: 1 });
+
+    if (r.ok) {
+        mostrarMensagem("Compra realizada! Total: " + dinheiro(r.dados.total), "ok");
+        carregarSaldo();
+        buscarProdutos();
+        abrirDetalhe(id);
+    } else {
+        mostrarMensagem(r.dados.erro, "erro");
+    }
 }
 
 async function enviarAvaliacao(id) {
