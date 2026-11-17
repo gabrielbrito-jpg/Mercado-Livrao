@@ -1,23 +1,11 @@
 import os
 from flask import Flask, jsonify, request, render_template, send_from_directory
 
-from daos.database import Database, ARQUIVO_BANCO
+from database import Database, ARQUIVO_BANCO
+from models import Vendedor, Categoria, Produto, Compra, Avaliacao
+from dao import CompradorDAO, VendedorDAO, CategoriaDAO, ProdutoDAO, CompraDAO, AvaliacaoDAO, RelatorioDAO
 
-from models.vendedor import Vendedor
-from models.categoria import Categoria
-from models.produto import Produto
-from models.compra import Compra
-from models.avaliacao import Avaliacao
-
-from daos.comprador_dao import CompradorDAO
-from daos.vendedor_dao import VendedorDAO
-from daos.categoria_dao import CategoriaDAO
-from daos.produto_dao import ProdutoDAO
-from daos.compra_dao import CompraDAO
-from daos.avaliacao_dao import AvaliacaoDAO
-from daos.relatorio_dao import RelatorioDAO
-
-# o front (index.html, templates e static) fica uma pasta acima, na raiz do projeto
+# o front (index.html, templates e static) fica na raiz do projeto, uma pasta acima
 app = Flask(__name__, template_folder="../templates", static_folder="../static")
 
 # se o banco ainda nao existe, cria com os dados de exemplo
@@ -32,19 +20,14 @@ compra_dao = CompraDAO()
 avaliacao_dao = AvaliacaoDAO()
 relatorio_dao = RelatorioDAO()
 
-COMPRADOR_ID = 1  # sem login, so existe um comprador
+COMPRADOR_ID = 1  # o site nao tem login, entao so existe um comprador
 
 
-PASTA_BACKEND = os.path.dirname(os.path.abspath(__file__))
-PASTA = os.path.dirname(PASTA_BACKEND)  # raiz do projeto
+# ========== PAGINAS ==========
 
-
-# ---------- paginas ----------
-
-# o index.html fica na raiz do projeto
 @app.route("/")
-def inicio():
-    return send_from_directory(PASTA, "index.html")
+def pagina_loja():
+    return send_from_directory("..", "index.html")
 
 
 @app.route("/minhas-compras")
@@ -62,17 +45,15 @@ def pagina_relatorios():
     return render_template("relatorios.html")
 
 
-# ---------- comprador ----------
+# ========== API (o JavaScript chama essas rotas com fetch) ==========
 
-@app.route("/comprador", methods=["GET"])
+@app.route("/comprador")
 def ver_comprador():
     comprador = comprador_dao.buscar(COMPRADOR_ID)
     return jsonify({"id": comprador.id, "nome": comprador.nome, "saldo": comprador.saldo})
 
 
-# ---------- categorias ----------
-
-@app.route("/categorias", methods=["GET"])
+@app.route("/categorias")
 def listar_categorias():
     return jsonify(categoria_dao.listar())
 
@@ -80,20 +61,19 @@ def listar_categorias():
 @app.route("/categorias", methods=["POST"])
 def cadastrar_categoria():
     dados = request.get_json()
-    if not dados or not dados.get("nome"):
+    if not dados.get("nome"):
         return jsonify({"erro": "Informe o nome da categoria"}), 400
 
-    categoria = Categoria(None, dados["nome"])
     try:
-        novo_id = categoria_dao.cadastrar(categoria)
+        novo_id = categoria_dao.cadastrar(Categoria(None, dados["nome"]))
     except Exception:
+        # o nome da categoria e UNIQUE no banco
         return jsonify({"erro": "Essa categoria ja existe"}), 400
+
     return jsonify({"mensagem": "Categoria cadastrada", "id": novo_id}), 201
 
 
-# ---------- vendedores ----------
-
-@app.route("/vendedores", methods=["GET"])
+@app.route("/vendedores")
 def listar_vendedores():
     return jsonify(vendedor_dao.listar())
 
@@ -101,7 +81,7 @@ def listar_vendedores():
 @app.route("/vendedores", methods=["POST"])
 def cadastrar_vendedor():
     dados = request.get_json()
-    if not dados or not dados.get("nome"):
+    if not dados.get("nome"):
         return jsonify({"erro": "Informe o nome do vendedor"}), 400
 
     vendedor = Vendedor(None, dados["nome"], dados.get("cidade", ""))
@@ -109,22 +89,19 @@ def cadastrar_vendedor():
     return jsonify({"mensagem": "Vendedor cadastrado", "id": novo_id}), 201
 
 
-# ---------- produtos ----------
-
 # exemplo: /produtos?busca=fone&categoria=1&preco_min=10&preco_max=100&ordem=preco_asc
-@app.route("/produtos", methods=["GET"])
+@app.route("/produtos")
 def pesquisar_produtos():
-    busca = request.args.get("busca")
-    categoria = request.args.get("categoria")
-    preco_min = request.args.get("preco_min")
-    preco_max = request.args.get("preco_max")
-    ordem = request.args.get("ordem")
+    produtos = produto_dao.pesquisar(
+        request.args.get("busca"),
+        request.args.get("categoria"),
+        request.args.get("preco_min"),
+        request.args.get("preco_max"),
+        request.args.get("ordem"))
+    return jsonify(produtos)
 
-    lista = produto_dao.pesquisar(busca, categoria, preco_min, preco_max, ordem)
-    return jsonify(lista)
 
-
-@app.route("/produtos/<int:id>", methods=["GET"])
+@app.route("/produtos/<int:id>")
 def ver_produto(id):
     produto = produto_dao.detalhe(id)
     if produto is None:
@@ -137,7 +114,7 @@ def ver_produto(id):
 @app.route("/produtos", methods=["POST"])
 def cadastrar_produto():
     dados = request.get_json()
-    if not dados or not dados.get("titulo") or dados.get("preco") is None:
+    if not dados.get("titulo") or not dados.get("preco"):
         return jsonify({"erro": "Informe titulo e preco"}), 400
 
     produto = Produto(
@@ -149,19 +126,15 @@ def cadastrar_produto():
         float(dados["preco"]),
         int(dados.get("estoque", 1)),
         dados.get("emoji", "📦"))
+
     novo_id = produto_dao.cadastrar(produto)
     return jsonify({"mensagem": "Produto cadastrado", "id": novo_id}), 201
 
 
-# ---------- compras ----------
-
 @app.route("/comprar", methods=["POST"])
 def comprar():
     dados = request.get_json()
-    if not dados or not dados.get("produto_id"):
-        return jsonify({"erro": "Informe o produto_id"}), 400
-
-    produto_id = dados["produto_id"]
+    produto_id = dados.get("produto_id")
     quantidade = int(dados.get("quantidade", 1))
 
     if quantidade < 1:
@@ -179,9 +152,8 @@ def comprar():
     if not comprador.tem_saldo(total):
         return jsonify({"erro": "Saldo insuficiente"}), 400
 
-    compra = Compra(None, COMPRADOR_ID, produto_id, quantidade, total, None)
-    compra_dao.cadastrar(compra)
-
+    # salva a compra, desconta o saldo e tira do estoque
+    compra_dao.cadastrar(Compra(None, COMPRADOR_ID, produto_id, quantidade, total))
     novo_saldo = round(comprador.saldo - total, 2)
     comprador_dao.atualizar_saldo(COMPRADOR_ID, novo_saldo)
     produto_dao.diminuir_estoque(produto_id, quantidade)
@@ -189,21 +161,16 @@ def comprar():
     return jsonify({"mensagem": "Compra realizada", "total": total, "saldo": novo_saldo}), 201
 
 
-@app.route("/compras", methods=["GET"])
+@app.route("/compras")
 def listar_compras():
     return jsonify(compra_dao.historico(COMPRADOR_ID))
 
 
-# ---------- avaliacoes ----------
-
 @app.route("/avaliacoes", methods=["POST"])
 def avaliar():
     dados = request.get_json()
-    if not dados or not dados.get("produto_id") or not dados.get("nota"):
-        return jsonify({"erro": "Informe produto_id e nota"}), 400
-
-    produto_id = dados["produto_id"]
-    nota = int(dados["nota"])
+    produto_id = dados.get("produto_id")
+    nota = int(dados.get("nota", 0))
 
     if nota < 1 or nota > 5:
         return jsonify({"erro": "A nota deve ser de 1 a 5"}), 400
@@ -214,29 +181,29 @@ def avaliar():
     if not compra_dao.ja_comprou(COMPRADOR_ID, produto_id):
         return jsonify({"erro": "Voce so pode avaliar o que comprou"}), 400
 
-    avaliacao = Avaliacao(None, produto_id, COMPRADOR_ID, nota, dados.get("comentario", ""), None)
+    avaliacao = Avaliacao(None, produto_id, COMPRADOR_ID, nota, dados.get("comentario", ""))
     novo_id = avaliacao_dao.cadastrar(avaliacao)
     return jsonify({"mensagem": "Avaliacao cadastrada", "id": novo_id}), 201
 
 
-# ---------- relatorios (JOINs) ----------
+# ========== RELATORIOS (cada um usa um tipo de JOIN) ==========
 
-@app.route("/relatorios/produtos-com-nota", methods=["GET"])
+@app.route("/relatorios/produtos-com-nota")
 def relatorio_produtos_com_nota():
     return jsonify(relatorio_dao.produtos_com_nota())
 
 
-@app.route("/relatorios/categorias", methods=["GET"])
+@app.route("/relatorios/categorias")
 def relatorio_categorias():
     return jsonify(relatorio_dao.categorias_com_quantidade())
 
 
-@app.route("/relatorios/vendedores-produtos", methods=["GET"])
+@app.route("/relatorios/vendedores-produtos")
 def relatorio_vendedores_produtos():
     return jsonify(relatorio_dao.vendedores_e_produtos())
 
 
-@app.route("/relatorios/mais-vendidos", methods=["GET"])
+@app.route("/relatorios/mais-vendidos")
 def relatorio_mais_vendidos():
     return jsonify(relatorio_dao.mais_vendidos())
 

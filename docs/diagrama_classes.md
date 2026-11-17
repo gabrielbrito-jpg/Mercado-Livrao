@@ -49,7 +49,9 @@ classDiagram
 
     class Database {
         +conectar() Connection
-        +executar_arquivo(nome_arquivo)
+        +consultar(sql, parametros) list
+        +executar(sql, parametros) int
+        +rodar_arquivo_sql(caminho)
         +criar_banco()
     }
     class CompradorDAO {
