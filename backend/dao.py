@@ -1,5 +1,5 @@
 from database import Database
-from models import Comprador, Produto
+from models import Comprador, Vendedor, Categoria, Produto
 
 db = Database()
 
@@ -22,15 +22,36 @@ class VendedorDAO:
     def listar(self):
         return db.consultar("SELECT * FROM vendedor")
 
+    def buscar(self, id):
+        resultado = db.consultar("SELECT * FROM vendedor WHERE id = ?", [id])
+        if len(resultado) == 0:
+            return None
+        v = resultado[0]
+        return Vendedor(v["id"], v["nome"], v["cidade"])
+
     def cadastrar(self, vendedor):
         return db.executar("INSERT INTO vendedor (nome, cidade) VALUES (?, ?)",
                            [vendedor.nome, vendedor.cidade])
+
+    def atualizar(self, vendedor):
+        db.executar("UPDATE vendedor SET nome = ?, cidade = ? WHERE id = ?",
+                    [vendedor.nome, vendedor.cidade, vendedor.id])
+
+    def remover(self, id):
+        db.executar("DELETE FROM vendedor WHERE id = ?", [id])
 
 
 class CategoriaDAO:
 
     def listar(self):
         return db.consultar("SELECT * FROM categoria")
+
+    def buscar(self, id):
+        resultado = db.consultar("SELECT * FROM categoria WHERE id = ?", [id])
+        if len(resultado) == 0:
+            return None
+        c = resultado[0]
+        return Categoria(c["id"], c["nome"])
 
     def cadastrar(self, categoria):
         return db.executar("INSERT INTO categoria (nome) VALUES (?)", [categoria.nome])
@@ -108,6 +129,16 @@ class ProdutoDAO:
             [produto.vendedor_id, produto.categoria_id, produto.titulo,
              produto.descricao, produto.preco, produto.estoque, produto.emoji])
 
+    def atualizar(self, produto):
+        db.executar(
+            "UPDATE produto SET vendedor_id = ?, categoria_id = ?, titulo = ?, descricao = ?, "
+            "preco = ?, estoque = ?, emoji = ? WHERE id = ?",
+            [produto.vendedor_id, produto.categoria_id, produto.titulo, produto.descricao,
+             produto.preco, produto.estoque, produto.emoji, produto.id])
+
+    def remover(self, id):
+        db.executar("DELETE FROM produto WHERE id = ?", [id])
+
     def diminuir_estoque(self, id, quantidade):
         db.executar("UPDATE produto SET estoque = estoque - ? WHERE id = ?", [quantidade, id])
 
@@ -133,6 +164,10 @@ class CompraDAO:
     def ja_comprou(self, comprador_id, produto_id):
         resultado = db.consultar("SELECT id FROM compra WHERE comprador_id = ? AND produto_id = ?",
                                  [comprador_id, produto_id])
+        return len(resultado) > 0
+
+    def produto_foi_vendido(self, produto_id):
+        resultado = db.consultar("SELECT id FROM compra WHERE produto_id = ?", [produto_id])
         return len(resultado) > 0
 
 

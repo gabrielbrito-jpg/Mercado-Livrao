@@ -24,6 +24,14 @@ relatorio_dao = RelatorioDAO()
 COMPRADOR_ID = 1  # o site nao tem login, entao so existe um comprador
 
 
+def conferir_vendedor_e_categoria(produto):
+    if produto.vendedor_id is not None and vendedor_dao.buscar(produto.vendedor_id) is None:
+        return "Vendedor nao encontrado"
+    if produto.categoria_id is not None and categoria_dao.buscar(produto.categoria_id) is None:
+        return "Categoria nao encontrada"
+    return None
+
+
 # ========== PAGINAS ==========
 
 @app.route("/")
@@ -95,6 +103,32 @@ def cadastrar_vendedor():
     return jsonify({"mensagem": "Vendedor cadastrado", "id": novo_id}), 201
 
 
+@app.route("/vendedores/<int:id>", methods=["PUT"])
+def editar_vendedor(id):
+    atual = vendedor_dao.buscar(id)
+    if atual is None:
+        return jsonify({"erro": "Vendedor nao encontrado"}), 404
+
+    dados = request.get_json()
+
+    try:
+        vendedor = Vendedor(id, dados.get("nome", atual.nome), dados.get("cidade", atual.cidade))
+    except DadoInvalidoError as erro:
+        return jsonify({"erro": str(erro)}), 400
+
+    vendedor_dao.atualizar(vendedor)
+    return jsonify({"mensagem": "Vendedor atualizado"})
+
+
+@app.route("/vendedores/<int:id>", methods=["DELETE"])
+def remover_vendedor(id):
+    if vendedor_dao.buscar(id) is None:
+        return jsonify({"erro": "Vendedor nao encontrado"}), 404
+
+    vendedor_dao.remover(id)
+    return jsonify({"mensagem": "Vendedor removido"})
+
+
 # exemplo: /produtos?busca=fone&categoria=1&preco_min=10&preco_max=100&ordem=preco_asc
 @app.route("/produtos")
 def pesquisar_produtos():
@@ -134,8 +168,53 @@ def cadastrar_produto():
     except DadoInvalidoError as erro:
         return jsonify({"erro": str(erro)}), 400
 
+    erro_relacao = conferir_vendedor_e_categoria(produto)
+    if erro_relacao:
+        return jsonify({"erro": erro_relacao}), 400
+
     novo_id = produto_dao.cadastrar(produto)
     return jsonify({"mensagem": "Produto cadastrado", "id": novo_id}), 201
+
+
+@app.route("/produtos/<int:id>", methods=["PUT"])
+def editar_produto(id):
+    atual = produto_dao.buscar(id)
+    if atual is None:
+        return jsonify({"erro": "Produto nao encontrado"}), 404
+
+    dados = request.get_json()
+
+    try:
+        produto = Produto(
+            id,
+            dados.get("vendedor_id", atual.vendedor_id),
+            dados.get("categoria_id", atual.categoria_id),
+            dados.get("titulo", atual.titulo),
+            dados.get("descricao", atual.descricao),
+            dados.get("preco", atual.preco),
+            dados.get("estoque", atual.estoque),
+            dados.get("emoji", atual.emoji))
+    except DadoInvalidoError as erro:
+        return jsonify({"erro": str(erro)}), 400
+
+    erro_relacao = conferir_vendedor_e_categoria(produto)
+    if erro_relacao:
+        return jsonify({"erro": erro_relacao}), 400
+
+    produto_dao.atualizar(produto)
+    return jsonify({"mensagem": "Produto atualizado"})
+
+
+@app.route("/produtos/<int:id>", methods=["DELETE"])
+def remover_produto(id):
+    if produto_dao.buscar(id) is None:
+        return jsonify({"erro": "Produto nao encontrado"}), 404
+
+    if compra_dao.produto_foi_vendido(id):
+        return jsonify({"erro": "Esse produto ja foi comprado e nao pode ser removido"}), 400
+
+    produto_dao.remover(id)
+    return jsonify({"mensagem": "Produto removido"})
 
 
 @app.route("/comprar", methods=["POST"])
