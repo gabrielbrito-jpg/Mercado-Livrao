@@ -14,6 +14,7 @@ class Database:
     def conectar(self):
         conexao = sqlite3.connect(ARQUIVO_BANCO)
         conexao.row_factory = sqlite3.Row  # deixa acessar a coluna pelo nome
+        conexao.execute("PRAGMA foreign_keys = ON")
         return conexao
 
     # usado no SELECT: devolve uma lista de dicionarios
