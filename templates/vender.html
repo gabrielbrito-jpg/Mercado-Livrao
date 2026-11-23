@@ -52,6 +52,16 @@
                 </div>
             </div>
 
+            <div class="painel">
+                <h2>Produtos cadastrados</h2>
+                <table>
+                    <thead>
+                        <tr><th></th><th>Produto</th><th>Preço</th><th>Estoque</th><th></th></tr>
+                    </thead>
+                    <tbody id="lista-produtos"></tbody>
+                </table>
+            </div>
+
             <div class="duas-colunas">
                 <div class="painel">
                     <h2>Cadastrar vendedor</h2>
@@ -70,9 +80,54 @@
                     </div>
                 </div>
             </div>
+
+            <div class="painel painel-vendedores">
+                <h2>Vendedores cadastrados</h2>
+                <table>
+                    <thead>
+                        <tr><th>Nome</th><th>Cidade</th><th></th></tr>
+                    </thead>
+                    <tbody id="lista-vendedores"></tbody>
+                </table>
+            </div>
     </main>
 
     <footer class="rodape">Mercado Livrão · Projeto Flask + HTML/CSS/JS · Colégio UNASP-HT</footer>
+
+    <dialog id="modal-produto">
+        <button class="fechar" onclick="fecharModal('modal-produto')">✕</button>
+        <div class="detalhe-corpo">
+            <h2>Editar produto</h2>
+            <input type="hidden" id="edit-id">
+            <div class="formulario">
+                <input type="text" id="edit-titulo" placeholder="Título do produto">
+                <textarea id="edit-descricao" placeholder="Descrição"></textarea>
+                <div class="linha">
+                    <input type="number" id="edit-preco" placeholder="Preço" step="0.01" min="0">
+                    <input type="number" id="edit-estoque" placeholder="Estoque" min="0">
+                    <input type="text" id="edit-emoji" placeholder="Emoji" maxlength="4">
+                </div>
+                <div class="linha">
+                    <select id="edit-categoria"></select>
+                    <select id="edit-vendedor"></select>
+                </div>
+                <button onclick="salvarProduto()">Salvar alterações</button>
+            </div>
+        </div>
+    </dialog>
+
+    <dialog id="modal-vendedor">
+        <button class="fechar" onclick="fecharModal('modal-vendedor')">✕</button>
+        <div class="detalhe-corpo">
+            <h2>Editar vendedor</h2>
+            <input type="hidden" id="edit-vend-id">
+            <div class="formulario">
+                <input type="text" id="edit-vend-nome" placeholder="Nome do vendedor">
+                <input type="text" id="edit-vend-cidade" placeholder="Cidade">
+                <button onclick="salvarVendedor()">Salvar alterações</button>
+            </div>
+        </div>
+    </dialog>
 
     <script src="/static/js/app.js"></script>
 </body>

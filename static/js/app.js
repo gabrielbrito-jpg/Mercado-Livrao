@@ -13,6 +13,8 @@ function texto(valor) {
 
 function mostrarMensagem(texto, tipo) {
     var caixa = document.getElementById("mensagem");
+    var aberto = document.querySelector("dialog[open]");
+    (aberto || document.body).appendChild(caixa);
     caixa.innerHTML = '<div class="' + tipo + '">' + texto + "</div>";
     setTimeout(function () {
         caixa.innerHTML = "";
@@ -56,6 +58,7 @@ async function carregarCategorias() {
     var r = await chamar("/categorias");
     var filtro = document.getElementById("filtro-categoria");  // existe na loja
     var form = document.getElementById("novo-categoria");      // existe em vender
+    var edicao = document.getElementById("edit-categoria");    // existe em vender
     var opcoes = "";
 
     for (var i = 0; i < r.dados.length; i++) {
@@ -68,17 +71,33 @@ async function carregarCategorias() {
     if (form) {
         form.innerHTML = '<option value="">Sem categoria</option>' + opcoes;
     }
+    if (edicao) {
+        edicao.innerHTML = '<option value="">Sem categoria</option>' + opcoes;
+    }
 }
+
+var listaVendedores = [];
 
 async function carregarVendedores() {
     var r = await chamar("/vendedores");
     var form = document.getElementById("novo-vendedor");
-    form.innerHTML = '<option value="">Sem vendedor</option>';
+    var edicao = document.getElementById("edit-vendedor");
+    var tabela = document.getElementById("lista-vendedores");
+    var opcoes = '<option value="">Sem vendedor</option>';
+    tabela.innerHTML = "";
+    listaVendedores = r.dados;
 
     for (var i = 0; i < r.dados.length; i++) {
         var v = r.dados[i];
-        form.innerHTML += '<option value="' + v.id + '">' + texto(v.nome) + "</option>";
+        opcoes += '<option value="' + v.id + '">' + texto(v.nome) + "</option>";
+        tabela.innerHTML += "<tr><td>" + texto(v.nome) + "</td><td>" + texto(v.cidade) + "</td>" +
+            '<td><div class="botoes">' +
+            '<button class="pequeno" onclick="editarVendedor(' + v.id + ')">Editar</button>' +
+            '<button class="pequeno perigo" onclick="removerVendedor(' + v.id + ')">Remover</button>' +
+            "</div></td></tr>";
     }
+    form.innerHTML = opcoes;
+    edicao.innerHTML = opcoes;
 }
 
 // ---------- loja ----------
@@ -233,8 +252,13 @@ async function enviarAvaliacao(id) {
     }
 }
 
+function fecharModal(id) {
+    document.getElementById(id).close();
+    document.body.appendChild(document.getElementById("mensagem"));
+}
+
 function fecharModalBotao() {
-    document.getElementById("modal").close();
+    fecharModal("modal");
 }
 
 // ---------- minhas compras ----------
@@ -273,6 +297,124 @@ async function cadastrarProduto() {
         document.getElementById("novo-titulo").value = "";
         document.getElementById("novo-descricao").value = "";
         document.getElementById("novo-preco").value = "";
+        carregarMeusProdutos();
+    } else {
+        mostrarMensagem(r.dados.erro, "erro");
+    }
+}
+
+async function carregarMeusProdutos() {
+    var r = await chamar("/produtos");
+    var corpo = document.getElementById("lista-produtos");
+    corpo.innerHTML = "";
+
+    if (r.dados.length == 0) {
+        corpo.innerHTML = '<tr><td colspan="5">Nenhum produto cadastrado.</td></tr>';
+    }
+    for (var i = 0; i < r.dados.length; i++) {
+        var p = r.dados[i];
+        corpo.innerHTML += "<tr><td>" + texto(p.emoji) + "</td><td>" + texto(p.titulo) + "</td><td>" +
+            dinheiro(p.preco) + "</td><td>" + p.estoque + "</td>" +
+            '<td><div class="botoes">' +
+            '<button class="pequeno" onclick="editarProduto(' + p.id + ')">Editar</button>' +
+            '<button class="pequeno perigo" onclick="removerProduto(' + p.id + ')">Remover</button>' +
+            "</div></td></tr>";
+    }
+}
+
+async function editarProduto(id) {
+    var r = await chamar("/produtos/" + id);
+    if (!r.ok) {
+        mostrarMensagem(r.dados.erro, "erro");
+        return;
+    }
+    var p = r.dados;
+
+    document.getElementById("edit-id").value = p.id;
+    document.getElementById("edit-titulo").value = p.titulo;
+    document.getElementById("edit-descricao").value = p.descricao || "";
+    document.getElementById("edit-preco").value = p.preco;
+    document.getElementById("edit-estoque").value = p.estoque;
+    document.getElementById("edit-emoji").value = p.emoji || "";
+    document.getElementById("edit-categoria").value = p.categoria_id === null ? "" : p.categoria_id;
+    document.getElementById("edit-vendedor").value = p.vendedor_id === null ? "" : p.vendedor_id;
+    document.getElementById("modal-produto").showModal();
+}
+
+async function salvarProduto() {
+    var id = document.getElementById("edit-id").value;
+    var dados = {
+        titulo: document.getElementById("edit-titulo").value,
+        descricao: document.getElementById("edit-descricao").value,
+        preco: document.getElementById("edit-preco").value,
+        estoque: document.getElementById("edit-estoque").value,
+        emoji: document.getElementById("edit-emoji").value || "📦",
+        categoria_id: document.getElementById("edit-categoria").value || null,
+        vendedor_id: document.getElementById("edit-vendedor").value || null
+    };
+    var r = await chamar("/produtos/" + id, "PUT", dados);
+
+    if (r.ok) {
+        fecharModal("modal-produto");
+        mostrarMensagem("Produto atualizado!", "ok");
+        carregarMeusProdutos();
+    } else {
+        mostrarMensagem(r.dados.erro, "erro");
+    }
+}
+
+async function removerProduto(id) {
+    if (!confirm("Remover este produto?")) {
+        return;
+    }
+    var r = await chamar("/produtos/" + id, "DELETE");
+
+    if (r.ok) {
+        mostrarMensagem("Produto removido!", "ok");
+        carregarMeusProdutos();
+    } else {
+        mostrarMensagem(r.dados.erro, "erro");
+    }
+}
+
+function editarVendedor(id) {
+    for (var i = 0; i < listaVendedores.length; i++) {
+        if (listaVendedores[i].id == id) {
+            document.getElementById("edit-vend-id").value = id;
+            document.getElementById("edit-vend-nome").value = listaVendedores[i].nome;
+            document.getElementById("edit-vend-cidade").value = listaVendedores[i].cidade || "";
+        }
+    }
+    document.getElementById("modal-vendedor").showModal();
+}
+
+async function salvarVendedor() {
+    var id = document.getElementById("edit-vend-id").value;
+    var dados = {
+        nome: document.getElementById("edit-vend-nome").value,
+        cidade: document.getElementById("edit-vend-cidade").value
+    };
+    var r = await chamar("/vendedores/" + id, "PUT", dados);
+
+    if (r.ok) {
+        fecharModal("modal-vendedor");
+        mostrarMensagem("Vendedor atualizado!", "ok");
+        carregarVendedores();
+    } else {
+        mostrarMensagem(r.dados.erro, "erro");
+    }
+}
+
+async function removerVendedor(id) {
+    if (!confirm("Remover este vendedor? Os produtos dele ficam sem vendedor.")) {
+        return;
+    }
+    var r = await chamar("/vendedores/" + id, "DELETE");
+
+    if (r.ok) {
+        mostrarMensagem("Vendedor removido!", "ok");
+        carregarVendedores();
+        carregarMeusProdutos();
     } else {
         mostrarMensagem(r.dados.erro, "erro");
     }
@@ -375,6 +517,7 @@ if (document.getElementById("lista-compras")) {
 if (document.getElementById("novo-titulo")) {
     carregarCategorias();
     carregarVendedores();
+    carregarMeusProdutos();
 }
 
 // relatorios (relatorios.html)

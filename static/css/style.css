@@ -358,6 +358,7 @@ main {
 
 .formulario .linha > * {
     flex: 1;
+    min-width: 0;
 }
 
 .duas-colunas {
@@ -385,6 +386,30 @@ th {
 th, td {
     padding: 11px 8px;
     border-bottom: 1px solid var(--borda);
+}
+
+.painel-vendedores {
+    margin-top: 20px;
+}
+
+.botoes {
+    display: flex;
+    gap: 6px;
+    justify-content: flex-end;
+}
+
+button.pequeno {
+    padding: 6px 12px;
+    font-size: 14px;
+}
+
+button.perigo {
+    background: #fdecee;
+    color: var(--vermelho);
+}
+
+button.perigo:hover {
+    background: #fbd5d9;
 }
 
 .tag {

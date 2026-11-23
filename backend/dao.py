@@ -63,7 +63,7 @@ class ProdutoDAO:
     # a nota media e quantos ja foram vendidos
     SQL_BASE = """
         SELECT produto.id, produto.titulo, produto.descricao, produto.preco,
-               produto.estoque, produto.emoji,
+               produto.estoque, produto.emoji, produto.categoria_id, produto.vendedor_id,
                categoria.nome AS categoria,
                vendedor.nome AS vendedor,
                (SELECT AVG(nota) FROM avaliacao WHERE avaliacao.produto_id = produto.id) AS nota_media,
