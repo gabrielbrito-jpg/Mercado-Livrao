@@ -21,6 +21,19 @@ function mostrarMensagem(texto, tipo) {
     }, 4000);
 }
 
+var pedidosAbertos = 0;
+
+function mostrarCarregando(ligado) {
+    var barra = document.getElementById("carregando");
+    if (!barra) {
+        barra = document.createElement("div");
+        barra.id = "carregando";
+        document.body.appendChild(barra);
+    }
+    pedidosAbertos += ligado ? 1 : -1;
+    barra.style.display = pedidosAbertos > 0 ? "block" : "none";
+}
+
 // faz a chamada para as rotas do Flask
 async function chamar(url, metodo, dados) {
     var opcoes = { method: metodo || "GET" };
@@ -28,9 +41,54 @@ async function chamar(url, metodo, dados) {
         opcoes.headers = { "Content-Type": "application/json" };
         opcoes.body = JSON.stringify(dados);
     }
-    var resposta = await fetch(url, opcoes);
-    var json = await resposta.json();
-    return { ok: resposta.ok, dados: json };
+    mostrarCarregando(true);
+    try {
+        var resposta = await fetch(url, opcoes);
+        var json = await resposta.json();
+        return { ok: resposta.ok, dados: json };
+    } catch (erro) {
+        var aviso = "Sem conexão com o servidor. Confira se o Flask está rodando.";
+        mostrarMensagem(aviso, "erro");
+        return { ok: false, dados: { erro: aviso } };
+    } finally {
+        mostrarCarregando(false);
+    }
+}
+
+function campoInvalido(id, mensagem) {
+    var campo = document.getElementById(id);
+    campo.classList.add("invalido");
+    campo.focus();
+    mostrarMensagem(mensagem, "erro");
+    return false;
+}
+
+document.addEventListener("input", function (e) {
+    e.target.classList.remove("invalido");
+});
+
+function validarProduto(prefixo) {
+    var titulo = document.getElementById(prefixo + "-titulo").value.trim();
+    var preco = document.getElementById(prefixo + "-preco").value;
+    var estoque = document.getElementById(prefixo + "-estoque").value;
+
+    if (titulo == "") {
+        return campoInvalido(prefixo + "-titulo", "Informe o título do produto");
+    }
+    if (preco == "" || Number(preco) <= 0) {
+        return campoInvalido(prefixo + "-preco", "Informe um preço maior que zero");
+    }
+    if (estoque == "" || Number(estoque) < 0 || !Number.isInteger(Number(estoque))) {
+        return campoInvalido(prefixo + "-estoque", "O estoque deve ser um número inteiro, zero ou mais");
+    }
+    return true;
+}
+
+function validarNome(id, mensagem) {
+    if (document.getElementById(id).value.trim() == "") {
+        return campoInvalido(id, mensagem);
+    }
+    return true;
 }
 
 // ---------- busca do topo ----------
@@ -49,6 +107,9 @@ function pesquisar() {
 
 async function carregarSaldo() {
     var r = await chamar("/comprador");
+    if (!r.ok) {
+        return;
+    }
     document.getElementById("saldo").textContent = dinheiro(r.dados.saldo);
 }
 
@@ -56,6 +117,9 @@ async function carregarSaldo() {
 
 async function carregarCategorias() {
     var r = await chamar("/categorias");
+    if (!r.ok) {
+        return;
+    }
     var filtro = document.getElementById("filtro-categoria");  // existe na loja
     var form = document.getElementById("novo-categoria");      // existe em vender
     var edicao = document.getElementById("edit-categoria");    // existe em vender
@@ -80,6 +144,9 @@ var listaVendedores = [];
 
 async function carregarVendedores() {
     var r = await chamar("/vendedores");
+    if (!r.ok) {
+        return;
+    }
     var form = document.getElementById("novo-vendedor");
     var edicao = document.getElementById("edit-vendedor");
     var tabela = document.getElementById("lista-vendedores");
@@ -122,8 +189,14 @@ async function buscarProdutos() {
     url += "&preco_max=" + document.getElementById("preco-max").value;
     url += "&ordem=" + document.getElementById("ordem").value;
 
-    var r = await chamar(url);
     var area = document.getElementById("produtos");
+    area.innerHTML = '<p class="aviso">Carregando produtos...</p>';
+
+    var r = await chamar(url);
+    if (!r.ok) {
+        area.innerHTML = '<p class="aviso">Não foi possível carregar os produtos.</p>';
+        return;
+    }
     area.innerHTML = "";
 
     if (r.dados.length == 0) {
@@ -166,6 +239,10 @@ function limparFiltros() {
 
 async function comprar(id) {
     var quantidade = document.getElementById("qtd-" + id).value;
+    if (quantidade == "" || Number(quantidade) < 1 || !Number.isInteger(Number(quantidade))) {
+        campoInvalido("qtd-" + id, "A quantidade deve ser um número inteiro, 1 ou mais");
+        return;
+    }
     var r = await chamar("/comprar", "POST", { produto_id: id, quantidade: quantidade });
 
     if (r.ok) {
@@ -181,6 +258,9 @@ async function comprar(id) {
 
 async function abrirDetalhe(id) {
     var r = await chamar("/produtos/" + id);
+    if (!r.ok) {
+        return;
+    }
     var p = r.dados;
 
     var html =
@@ -264,8 +344,14 @@ function fecharModalBotao() {
 // ---------- minhas compras ----------
 
 async function carregarCompras() {
-    var r = await chamar("/compras");
     var corpo = document.getElementById("lista-compras");
+    corpo.innerHTML = '<tr><td colspan="5">Carregando...</td></tr>';
+
+    var r = await chamar("/compras");
+    if (!r.ok) {
+        corpo.innerHTML = '<tr><td colspan="5">Não foi possível carregar as compras.</td></tr>';
+        return;
+    }
     corpo.innerHTML = "";
 
     if (r.dados.length == 0) {
@@ -281,6 +367,9 @@ async function carregarCompras() {
 // ---------- vender (cadastros) ----------
 
 async function cadastrarProduto() {
+    if (!validarProduto("novo")) {
+        return;
+    }
     var dados = {
         titulo: document.getElementById("novo-titulo").value,
         descricao: document.getElementById("novo-descricao").value,
@@ -304,8 +393,14 @@ async function cadastrarProduto() {
 }
 
 async function carregarMeusProdutos() {
-    var r = await chamar("/produtos");
     var corpo = document.getElementById("lista-produtos");
+    corpo.innerHTML = '<tr><td colspan="5">Carregando...</td></tr>';
+
+    var r = await chamar("/produtos");
+    if (!r.ok) {
+        corpo.innerHTML = '<tr><td colspan="5">Não foi possível carregar os produtos.</td></tr>';
+        return;
+    }
     corpo.innerHTML = "";
 
     if (r.dados.length == 0) {
@@ -342,6 +437,9 @@ async function editarProduto(id) {
 }
 
 async function salvarProduto() {
+    if (!validarProduto("edit")) {
+        return;
+    }
     var id = document.getElementById("edit-id").value;
     var dados = {
         titulo: document.getElementById("edit-titulo").value,
@@ -389,6 +487,9 @@ function editarVendedor(id) {
 }
 
 async function salvarVendedor() {
+    if (!validarNome("edit-vend-nome", "Informe o nome do vendedor")) {
+        return;
+    }
     var id = document.getElementById("edit-vend-id").value;
     var dados = {
         nome: document.getElementById("edit-vend-nome").value,
@@ -421,6 +522,9 @@ async function removerVendedor(id) {
 }
 
 async function cadastrarVendedor() {
+    if (!validarNome("vend-nome", "Informe o nome do vendedor")) {
+        return;
+    }
     var dados = {
         nome: document.getElementById("vend-nome").value,
         cidade: document.getElementById("vend-cidade").value
@@ -438,7 +542,10 @@ async function cadastrarVendedor() {
 }
 
 async function cadastrarCategoria() {
-    var r = await chamar("/categorias", "POST", { nome: document.getElementById("cat-nome").value });
+    if (!validarNome("cat-nome", "Informe o nome da categoria")) {
+        return;
+    }
+    var r =await chamar("/categorias", "POST", { nome: document.getElementById("cat-nome").value });
 
     if (r.ok) {
         mostrarMensagem("Categoria cadastrada!", "ok");
@@ -454,6 +561,10 @@ async function cadastrarCategoria() {
 async function carregarRelatorios() {
     var r1 = await chamar("/relatorios/produtos-com-nota");
     var corpo = document.getElementById("rel-notas");
+    if (!r1.ok) {
+        corpo.innerHTML = '<tr><td colspan="3">Não foi possível carregar os relatórios.</td></tr>';
+        return;
+    }
     corpo.innerHTML = "";
     for (var i = 0; i < r1.dados.length; i++) {
         var a = r1.dados[i];
@@ -462,6 +573,9 @@ async function carregarRelatorios() {
     }
 
     var r2 = await chamar("/relatorios/categorias");
+    if (!r2.ok) {
+        return;
+    }
     corpo = document.getElementById("rel-categorias");
     corpo.innerHTML = "";
     for (i = 0; i < r2.dados.length; i++) {
@@ -470,6 +584,9 @@ async function carregarRelatorios() {
     }
 
     var r3 = await chamar("/relatorios/vendedores-produtos");
+    if (!r3.ok) {
+        return;
+    }
     corpo = document.getElementById("rel-vendedores");
     corpo.innerHTML = "";
     for (i = 0; i < r3.dados.length; i++) {
@@ -479,6 +596,9 @@ async function carregarRelatorios() {
     }
 
     var r4 = await chamar("/relatorios/mais-vendidos");
+    if (!r4.ok) {
+        return;
+    }
     corpo = document.getElementById("rel-vendidos");
     corpo.innerHTML = "";
     for (i = 0; i < r4.dados.length; i++) {

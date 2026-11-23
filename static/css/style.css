@@ -66,6 +66,33 @@ input:focus, select:focus, textarea:focus {
     border-color: var(--azul);
 }
 
+input.invalido, select.invalido, textarea.invalido {
+    border-color: var(--vermelho);
+    background: #fff5f6;
+}
+
+#carregando {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    z-index: 20;
+    background: linear-gradient(90deg, var(--azul) 0%, var(--azul-claro) 50%, var(--azul) 100%);
+    background-size: 200% 100%;
+    animation: carregando 1s linear infinite;
+}
+
+@keyframes carregando {
+    from { background-position: 200% 0; }
+    to { background-position: 0 0; }
+}
+
+.aviso {
+    color: var(--rotulo);
+}
+
 textarea {
     min-height: 80px;
     resize: vertical;
