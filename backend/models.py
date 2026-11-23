@@ -4,6 +4,14 @@ class DadoInvalidoError(ValueError):
     pass
 
 
+class EstoqueInsuficienteError(Exception):
+    pass
+
+
+class SaldoInsuficienteError(Exception):
+    pass
+
+
 def converter(valor, tipo, mensagem):
     try:
         return tipo(valor)
@@ -55,6 +63,11 @@ class Comprador(Pessoa):
 
     def tem_saldo(self, valor):
         return self._saldo >= valor
+
+    def pagar(self, valor):
+        if not self.tem_saldo(valor):
+            raise SaldoInsuficienteError("Saldo insuficiente")
+        self.saldo = round(self._saldo - valor, 2)
 
 
 class Vendedor(Pessoa):
@@ -172,6 +185,11 @@ class Produto:
 
     def tem_estoque(self, quantidade):
         return self._estoque >= quantidade
+
+    def retirar_estoque(self, quantidade):
+        if not self.tem_estoque(quantidade):
+            raise EstoqueInsuficienteError("Estoque insuficiente")
+        self.estoque = self._estoque - quantidade
 
 
 class Compra:

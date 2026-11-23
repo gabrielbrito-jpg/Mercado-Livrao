@@ -2,7 +2,8 @@ import os
 from flask import Flask, jsonify, request, render_template, send_from_directory
 
 from database import Database, ARQUIVO_BANCO
-from models import Vendedor, Categoria, Produto, Compra, Avaliacao
+from models import (Vendedor, Categoria, Produto, Compra, Avaliacao,
+                    DadoInvalidoError, EstoqueInsuficienteError, SaldoInsuficienteError)
 from dao import CompradorDAO, VendedorDAO, CategoriaDAO, ProdutoDAO, CompraDAO, AvaliacaoDAO, RelatorioDAO
 
 # o front (index.html, templates e static) fica na raiz do projeto, uma pasta acima
@@ -61,11 +62,14 @@ def listar_categorias():
 @app.route("/categorias", methods=["POST"])
 def cadastrar_categoria():
     dados = request.get_json()
-    if not dados.get("nome"):
-        return jsonify({"erro": "Informe o nome da categoria"}), 400
 
     try:
-        novo_id = categoria_dao.cadastrar(Categoria(None, dados["nome"]))
+        categoria = Categoria(None, dados.get("nome"))
+    except DadoInvalidoError as erro:
+        return jsonify({"erro": str(erro)}), 400
+
+    try:
+        novo_id = categoria_dao.cadastrar(categoria)
     except Exception:
         # o nome da categoria e UNIQUE no banco
         return jsonify({"erro": "Essa categoria ja existe"}), 400
@@ -81,10 +85,12 @@ def listar_vendedores():
 @app.route("/vendedores", methods=["POST"])
 def cadastrar_vendedor():
     dados = request.get_json()
-    if not dados.get("nome"):
-        return jsonify({"erro": "Informe o nome do vendedor"}), 400
 
-    vendedor = Vendedor(None, dados["nome"], dados.get("cidade", ""))
+    try:
+        vendedor = Vendedor(None, dados.get("nome"), dados.get("cidade"))
+    except DadoInvalidoError as erro:
+        return jsonify({"erro": str(erro)}), 400
+
     novo_id = vendedor_dao.cadastrar(vendedor)
     return jsonify({"mensagem": "Vendedor cadastrado", "id": novo_id}), 201
 
@@ -114,18 +120,19 @@ def ver_produto(id):
 @app.route("/produtos", methods=["POST"])
 def cadastrar_produto():
     dados = request.get_json()
-    if not dados.get("titulo") or not dados.get("preco"):
-        return jsonify({"erro": "Informe titulo e preco"}), 400
 
-    produto = Produto(
-        None,
-        dados.get("vendedor_id"),
-        dados.get("categoria_id"),
-        dados["titulo"],
-        dados.get("descricao", ""),
-        float(dados["preco"]),
-        int(dados.get("estoque", 1)),
-        dados.get("emoji", "📦"))
+    try:
+        produto = Produto(
+            None,
+            dados.get("vendedor_id"),
+            dados.get("categoria_id"),
+            dados.get("titulo"),
+            dados.get("descricao"),
+            dados.get("preco"),
+            dados.get("estoque", 1),
+            dados.get("emoji"))
+    except DadoInvalidoError as erro:
+        return jsonify({"erro": str(erro)}), 400
 
     novo_id = produto_dao.cadastrar(produto)
     return jsonify({"mensagem": "Produto cadastrado", "id": novo_id}), 201
@@ -135,30 +142,32 @@ def cadastrar_produto():
 def comprar():
     dados = request.get_json()
     produto_id = dados.get("produto_id")
-    quantidade = int(dados.get("quantidade", 1))
-
-    if quantidade < 1:
-        return jsonify({"erro": "Quantidade invalida"}), 400
 
     produto = produto_dao.buscar(produto_id)
     if produto is None:
         return jsonify({"erro": "Produto nao encontrado"}), 404
 
-    if not produto.tem_estoque(quantidade):
-        return jsonify({"erro": "Estoque insuficiente"}), 400
-
     comprador = comprador_dao.buscar(COMPRADOR_ID)
-    total = round(produto.preco * quantidade, 2)
-    if not comprador.tem_saldo(total):
-        return jsonify({"erro": "Saldo insuficiente"}), 400
+
+    try:
+        quantidade = int(dados.get("quantidade", 1))
+        total = round(produto.preco * quantidade, 2)
+        compra = Compra(None, COMPRADOR_ID, produto_id, quantidade, total)
+        produto.retirar_estoque(quantidade)
+        comprador.pagar(total)
+    except (TypeError, ValueError):
+        return jsonify({"erro": "Quantidade invalida"}), 400
+    except EstoqueInsuficienteError as erro:
+        return jsonify({"erro": str(erro)}), 400
+    except SaldoInsuficienteError as erro:
+        return jsonify({"erro": str(erro)}), 400
 
     # salva a compra, desconta o saldo e tira do estoque
-    compra_dao.cadastrar(Compra(None, COMPRADOR_ID, produto_id, quantidade, total))
-    novo_saldo = round(comprador.saldo - total, 2)
-    comprador_dao.atualizar_saldo(COMPRADOR_ID, novo_saldo)
+    compra_dao.cadastrar(compra)
+    comprador_dao.atualizar_saldo(COMPRADOR_ID, comprador.saldo)
     produto_dao.diminuir_estoque(produto_id, quantidade)
 
-    return jsonify({"mensagem": "Compra realizada", "total": total, "saldo": novo_saldo}), 201
+    return jsonify({"mensagem": "Compra realizada", "total": total, "saldo": comprador.saldo}), 201
 
 
 @app.route("/compras")
@@ -170,10 +179,11 @@ def listar_compras():
 def avaliar():
     dados = request.get_json()
     produto_id = dados.get("produto_id")
-    nota = int(dados.get("nota", 0))
 
-    if nota < 1 or nota > 5:
-        return jsonify({"erro": "A nota deve ser de 1 a 5"}), 400
+    try:
+        avaliacao = Avaliacao(None, produto_id, COMPRADOR_ID, dados.get("nota"), dados.get("comentario"))
+    except DadoInvalidoError as erro:
+        return jsonify({"erro": str(erro)}), 400
 
     if produto_dao.buscar(produto_id) is None:
         return jsonify({"erro": "Produto nao encontrado"}), 404
@@ -181,7 +191,6 @@ def avaliar():
     if not compra_dao.ja_comprou(COMPRADOR_ID, produto_id):
         return jsonify({"erro": "Voce so pode avaliar o que comprou"}), 400
 
-    avaliacao = Avaliacao(None, produto_id, COMPRADOR_ID, nota, dados.get("comentario", ""))
     novo_id = avaliacao_dao.cadastrar(avaliacao)
     return jsonify({"mensagem": "Avaliacao cadastrada", "id": novo_id}), 201
 
